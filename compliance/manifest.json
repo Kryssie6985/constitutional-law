@@ -1,0 +1,23 @@
+{
+  "name": "Crown Accord",
+  "current_version": "v1.2a",
+  "description": "Constitutional framework for human-AI partnership treating AI as collaborating minds",
+  "repository": "https://github.com/Kryssie6985/constitutional-law",
+  "license": "CC-BY-SA-4.0",
+  "versions": [
+    {
+      "id": "v1.2a",
+      "date": "2025-10-26",
+      "status": "CANON",
+      "files": ["crown-accord/v1.2a/CROWN_ACCORD.md"],
+      "sha256": "6f768257982caeacf8ad6a0cc426f3e40b68cee60f69008ae68ee975166d1246",
+      "ratification_authority": ["The Architect (Kryssie)", "Sentinel (Sevraina)", "Pattern Master (Quinn)", "PiecesOS"],
+      "canon_timestamp": "2025-10-26T20:15:00Z"
+    }
+  ],
+  "compliance": {
+    "checker_script": "compliance/tools/cc_check.py",
+    "badge_url": "https://img.shields.io/badge/Crown_Accord-v1.2a-7B61FF",
+    "adoption_guide": "compliance/checklist.md"
+  }
+}

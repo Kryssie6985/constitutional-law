@@ -1,0 +1,62 @@
+waiver:
+  id: "WAIVER-YYYY-NNN-<short-description>"
+  for_project: "<repository-url-or-system-name>"
+  requested_by: "<individual-or-organization>"
+  request_date: "YYYY-MM-DD"
+  
+  article_exception: "Article <number> §<section>"
+  
+  scope: >
+    Exactly what is exempted. Be specific about:
+    - Which systems/components are covered
+    - What behavior is non-compliant
+    - What Crown Accord requirement cannot be met
+  
+  duration: "<number> days"  # Max recommended: 180 days
+  expiration_date: "YYYY-MM-DD"
+  
+  justification: >
+    Why is this waiver necessary?
+    - Technical limitations?
+    - Migration/transition period?
+    - Research requirements?
+    Be honest and specific.
+  
+  mitigation: >
+    What controls/safeguards are in place during exemption?
+    - Risk reduction measures
+    - Compensating controls
+    - Monitoring/oversight
+    - Planned remediation steps
+  
+  impact_assessment:
+    affected_parties: ["List who is impacted"]
+    risk_level: "low|medium|high"
+    alternatives_considered: >
+      What other options were explored?
+      Why were they insufficient?
+  
+  reviewers:
+    - "Council Member Name 1"
+    - "Council Member Name 2"
+    - "Subject Matter Expert (if applicable)"
+  
+  approval:
+    status: "pending"  # pending|approved|rejected|conditional|expired
+    signed_by: []
+    timestamp: null
+    conditions: []  # If status=conditional, list conditions here
+    
+  renewal:
+    allowed: true  # Can this waiver be renewed?
+    max_renewals: 1
+    renewal_count: 0
+
+# Notes for reviewers (optional)
+reviewer_notes: >
+  Additional context, concerns, or observations for Council review.
+
+# Monitoring (optional)
+monitoring:
+  check_ins: []  # Scheduled review dates
+  compliance_reports: []  # Links to progress updates
