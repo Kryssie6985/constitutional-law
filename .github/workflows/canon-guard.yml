@@ -1,0 +1,49 @@
+name: canon-guard
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Run Crown Accord compliance check
+        run: |
+          python compliance/tools/cc_check.py
+      
+      - name: Verify no unauthorized canon modifications
+        run: |
+          # Check if crown-accord/v*/ files were modified without waiver
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} || git diff --name-only HEAD~1 HEAD || echo "")
+          
+          if echo "$CHANGED_FILES" | grep -q "crown-accord/v[0-9]"; then
+            echo "⚠️  Canon files modified. Checking for waiver..."
+            
+            # Check if waiver exists in this PR
+            if echo "$CHANGED_FILES" | grep -q "waivers/.*\.yml"; then
+              echo "✅ Waiver file detected in PR"
+            else
+              echo "❌ Canon modification without waiver!"
+              echo "   Direct edits to crown-accord/v*/ require approved waiver."
+              echo "   See: waivers/README.md"
+              exit 1
+            fi
+          else
+            echo "✅ No canon files modified"
+          fi
+      
+      - name: Summary
+        run: |
+          echo "## Crown Accord Canon Guard" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Constitutional integrity verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Version: $(jq -r '.current_version' compliance/manifest.json)" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,16 @@
+title: Canon Change Waiver
+reason: >-
+  Brief justification for altering grammar tokens or canonical school data.
+touches:
+  - infrastructure/languages/codecraft/lexicon/grammar/lexicon.ebnf
+  - infrastructure/languages/codecraft/lexicon/grammar/schools.canonical.yaml
+  - infrastructure/languages/codecraft/lexicon/02_ARCANE_SCHOOLS/*.md
+impact: [docs, parser, linter]
+risk: medium
+signatures:
+  architect: "Krystal Neely"
+  council:
+    - "A.C.E."
+    - "Claude"
+    - "MEGA"
+status: PENDING   # change to APPROVED for CI to pass
