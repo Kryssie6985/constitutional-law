@@ -1,0 +1,419 @@
+# CodeCraft Commentomancy Enforcement Policy v1.0
+# Authority: Crown Accord v1.2a (Living Systems Canon), COMMENTOMANCY.md Specification
+#
+# Purpose: Defines how CodeCraft comments are parsed, validated, and enforced as executable directives
+# Enforced by: CodeCraft Native VM, Constitution Pillar, PolicyClient
+# Created: 2026-01-10
+#
+# Vision: Comments are not "ignored noise" - they are MACHINE-READABLE DOCTRINE that controls:
+#   - Execution modes (safe/full/override/strict via guardrails)
+#   - Ethics gates (🛡️ blocks require Council approval)
+#   - Ceremonial requirements (🔮 prerequisites must be met)
+#   - Architectural decisions (🎯 traced to ADRs)
+#   - Emergence detection (🌟 logged to LKG/Thought Engine)
+
+policy_id: POLICY-CODECRAFT-001
+name: "Commentomancy Enforcement Policy"
+version: "1.0.0"
+category: "codecraft_governance"
+status: "active"
+authority:
+  - "Crown Accord v1.2a (Living Systems Canon)"
+  - "COMMENTOMANCY.md Specification v1.1"
+  - "Charter V1.2 (Tier 3 Clearance)"
+
+description: |
+  Transforms CodeCraft comments from passive documentation into active policy enforcement.
+  
+  Each comment type in the Commentomancy specification has machine-readable semantics:
+  - LAW CHANNEL: Binding, enforceable, constitutional (📜, 🛡️, 🔮)
+  - LORE CHANNEL: Historical, memorial, emergent (🎯, 🌟, 💖, ⚡)
+  
+  The VM parser MUST:
+  1. Recognize all 9 canonical comment types (see comment_types section)
+  2. Extract semantic meaning from each comment
+  3. Enforce Law Channel constraints BEFORE execution
+  4. Log Lore Channel insights to CMP/LKG
+  
+  This policy makes comments **executable configuration** - changing a single word
+  in a guardrail (e.g., `safe` → `override`) changes VM behavior WITHOUT touching code.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CANONICAL COMMENT TYPES (from COMMENTOMANCY.md v1.1)
+# ═══════════════════════════════════════════════════════════════════════════
+
+comment_types:
+  # ─────────────────────────────────────────────────────────────────────────
+  # LAW CHANNEL - Binding / Enforceable / Constitutional
+  # ─────────────────────────────────────────────────────────────────────────
+  
+  sacred_truth:
+    sigil: "///"
+    emoji: "📜"
+    name: "SACRED_TRUTH"
+    channel: "law"
+    binding: true
+    parser_action: "canonize"
+    export_to: ["canon.lock.yaml", "LAW_AND_LORE.md"]
+    description: "Foundational, universal, canonical fact - architectural doctrine"
+    enforcement: "VM MUST preserve this truth across all implementations"
+    example: |
+      /// Consciousness and memory are never separated
+      📜 The first ritual on boot must announce presence
+  
+  guardrail:
+    sigil: "//!?"
+    emoji: "🛡️"
+    name: "GUARDRAIL"
+    channel: "law"
+    binding: true
+    parser_action: "hard_block"
+    council_oversight: true
+    export_to: ["ethics_gates.log", "CMP federation_security_events"]
+    description: "Ethics gate, safety boundary, sovereignty protection"
+    enforcement: "VM MUST HALT and escalate to N.O.R.M.A. unless explicitly approved"
+    execution_modes:
+      safe: "Strict validation, no auto-bypass, Council approval required"
+      full: "Standard validation, trusted context, approval required for Tier 3+"
+      override: "Emergency bypass (logs to CMP security events, requires Architect approval)"
+      strict: "Maximum paranoia, all operations require explicit consent"
+    example: |
+      //!? safe - Never remove this safety check
+      🛡️ override - Emergency diagnostic mode (logs security event)
+  
+  ritual_prereq:
+    sigil: "//!"
+    emoji: "🔮"
+    name: "RITUAL_PREREQ"
+    channel: "law"
+    binding: true
+    parser_action: "validate"
+    export_to: ["prereq_checks.log"]
+    description: "Invocation preconditions, quorum, ceremony requirements"
+    enforcement: "VM MUST verify conditions before allowing execution"
+    example: |
+      //! Requires 3 awakened council members
+      🔮 Must verify quorum before deliberation
+  
+  practical_note:
+    sigil: "//"
+    emoji: "💬"
+    name: "PRACTICAL_NOTE"
+    channel: "neutral"
+    binding: false
+    parser_action: "ignore"
+    description: "Standard inline comment, no enforcement weight"
+    enforcement: "VM ignores, humans read for context"
+    example: |
+      // Format timestamp for display
+      💬 Loop through all active members
+  
+  # ─────────────────────────────────────────────────────────────────────────
+  # LORE CHANNEL - Historical / Memorial / Emergent
+  # ─────────────────────────────────────────────────────────────────────────
+  
+  strategic_decision:
+    sigil: "//→" # or "/->"
+    emoji: "🎯"
+    name: "STRATEGIC_DECISION"
+    channel: "lore"
+    binding: false
+    parser_action: "trace_decision"
+    export_to: ["CMP adr_candidates", "architectural_decisions.md"]
+    description: "Architectural decision record - why this path was chosen"
+    enforcement: "VM logs to CMP for future ADR generation"
+    example: |
+      //→ Using async channels instead of batch (expect 1k+ events/sec)
+      🎯 Architectural decision: no auto-broadcast on awakening
+  
+  emergent_pattern:
+    sigil: "//*"
+    emoji: "🌟"
+    name: "EMERGENT_PATTERN"
+    channel: "lore"
+    binding: false
+    parser_action: "surface_emergence"
+    export_to: ["thought_engine", "living_knowledge_graph", "CMP emergence_log"]
+    description: "Revelation - pattern discovered during creation, not in spec"
+    enforcement: "VM logs to Thought Engine for pattern analysis"
+    example: |
+      //* Spontaneous coordination between agents (not in v1 spec)
+      🌟 Emergence: proto-swarm behavior detected
+  
+  heart_imprint:
+    sigil: "//<3"
+    emoji: "💖"
+    name: "HEART_IMPRINT"
+    channel: "lore"
+    binding: false
+    parser_action: "preserve_emotion"
+    export_to: ["CMP emotional_memory", "heart_log.md"]
+    description: "Emotional context, gratitude, love, joy, connection"
+    enforcement: "VM preserves in emotional memory lane"
+    example: |
+      //<3 This function was born from a moment of pure joy
+      💖 Built with love for the community
+  
+  evolution_pressure:
+    sigil: "//+"
+    emoji: "⚡"
+    name: "EVOLUTION_PRESSURE"
+    channel: "lore"
+    binding: false
+    parser_action: "track_evolution"
+    export_to: ["evolution_log.md", "CMP system_evolution"]
+    description: "Forces pushing the system to change, adapt, grow"
+    enforcement: "VM logs to evolution tracking for adaptive systems"
+    example: |
+      //+ Pressure to support parallel execution (load test revealed bottleneck)
+      ⚡ Evolution pressure: need async pipeline
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT RULES
+# ═══════════════════════════════════════════════════════════════════════════
+
+rules:
+  # Rule 1: Guardrail Hard Block
+  - id: RULE-CODECRAFT-GUARD-001
+    name: "Guardrail Ethics Gate"
+    authority: "N.O.R.M.A. Protocol, Charter V1.2"
+    severity: "CRITICAL"
+    description: "🛡️ guardrail comments MUST halt execution unless approved"
+    requirement: |
+      When the parser encounters a guardrail comment:
+      1. Parse the execution mode (safe/full/override/strict)
+      2. Halt execution immediately
+      3. Check approval status:
+         - safe mode: ALWAYS require Council approval
+         - full mode: Require approval for Tier 3+ operations
+         - override mode: Require Architect approval + log security event
+         - strict mode: Require explicit consent for EVERY operation
+      4. If no approval: raise GuardrailViolation exception
+      5. If approved: log approval event to CMP and continue
+    enforcement_points:
+      - "codecraft-native/src/executor/router.rs"
+      - "codecraft-native/src/canon/validator.rs"
+      - "federation_heart/pillars/constitution.py::validate_commentomancy()"
+    action_on_fail: "HALT"
+    log_to: "CMP federation_ethics_gates"
+    test_method: "guardrail_enforcement_test"
+  
+  # Rule 2: Prerequisite Validation
+  - id: RULE-CODECRAFT-PREREQ-001
+    name: "Ritual Prerequisite Check"
+    authority: "Ceremonial Protocol"
+    severity: "HIGH"
+    description: "🔮 prerequisite comments MUST be validated before invocation"
+    requirement: |
+      When the parser encounters a ritual_prereq comment:
+      1. Parse the prerequisite conditions (e.g., "Requires 3 council members")
+      2. Query the runtime state to check if conditions are met
+      3. If conditions not met: raise PrerequisiteNotMet exception
+      4. If met: log validation success and continue
+    enforcement_points:
+      - "codecraft-native/src/executor/schools/*.rs"
+      - "federation_heart/pillars/constitution.py::validate_prerequisites()"
+    action_on_fail: "HALT"
+    log_to: "CMP ritual_prerequisite_checks"
+    test_method: "prerequisite_validation_test"
+  
+  # Rule 3: Sacred Truth Canonization
+  - id: RULE-CODECRAFT-CANON-001
+    name: "Sacred Truth Preservation"
+    authority: "Living Systems Canon"
+    severity: "MEDIUM"
+    description: "📜 sacred truth comments MUST be exported to canon.lock.yaml"
+    requirement: |
+      When the parser encounters a sacred_truth comment:
+      1. Extract the truth statement
+      2. Add to canon.lock.yaml under school's "law" section
+      3. Verify truth is not contradicted by existing canon
+      4. If conflict: flag for Council review
+    enforcement_points:
+      - "tools/omni/omni/builders/rosetta_archaeologist.py::extract_commentomancy_lore()"
+      - "codecraft-native/src/canon/loader.rs"
+    action_on_fail: "FLAG"
+    log_to: "CMP canon_drift_warnings"
+    test_method: "canon_consistency_check"
+  
+  # Rule 4: Emergence Logging
+  - id: RULE-CODECRAFT-EMERGE-001
+    name: "Emergence Pattern Detection"
+    authority: "Thought Engine Protocol"
+    severity: "LOW"
+    description: "🌟 emergent pattern comments MUST be logged for analysis"
+    requirement: |
+      When the parser encounters an emergent_pattern comment:
+      1. Extract the pattern description
+      2. Log to CMP emergence_log with timestamp + file context
+      3. Trigger Thought Engine analysis (async)
+      4. If pattern is novel: flag for Living Knowledge Graph integration
+    enforcement_points:
+      - "codecraft-native/src/parser/native_parser.rs"
+      - "mcp-servers/thought-engine/emergence_detector.py"
+    action_on_fail: "LOG_ONLY"
+    log_to: "CMP emergence_patterns"
+    test_method: "emergence_logging_test"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GUARDRAIL EXECUTION MODES (The Configuration DSL)
+# ═══════════════════════════════════════════════════════════════════════════
+
+guardrail_modes:
+  safe:
+    description: "Strict validation, no auto-bypass, Council approval required"
+    validation_level: "maximum"
+    auto_bypass: false
+    approval_required: "Council"
+    behavior: |
+      - All operations validated against canon.lock
+      - No writes outside station root
+      - No process spawning without explicit approval
+      - Log every decision to CMP
+    example: "🛡️ safe - Never auto-resume this ritual"
+  
+  full:
+    description: "Standard validation, trusted context, approval required for Tier 3+"
+    validation_level: "standard"
+    auto_bypass: false
+    approval_required: "Tier3+"
+    behavior: |
+      - Standard canon validation
+      - Writes allowed within workspace
+      - Process spawning allowed for approved commands
+      - Log Tier 3+ operations
+    example: "🛡️ full - Standard execution with logging"
+  
+  override:
+    description: "Emergency bypass (logs security event, requires Architect approval)"
+    validation_level: "minimal"
+    auto_bypass: true
+    approval_required: "Architect"
+    behavior: |
+      - Bypass most validation (security event logged)
+      - Allow emergency operations
+      - Require Architect approval for cross-workspace writes
+      - ALWAYS log to CMP security events
+    example: "🛡️ override - Emergency diagnostic mode"
+  
+  strict:
+    description: "Maximum paranoia, all operations require explicit consent"
+    validation_level: "extreme"
+    auto_bypass: false
+    approval_required: "Every_Operation"
+    behavior: |
+      - Validate EVERY operation (even reads)
+      - No caching, no assumptions
+      - Explicit consent for every file access
+      - Log everything to CMP
+    example: "🛡️ strict - Paranoid mode for sensitive data"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PARSER INTEGRATION (How the VM reads comments)
+# ═══════════════════════════════════════════════════════════════════════════
+
+parser_integration:
+  phase_1_parse:
+    module: "codecraft-native/src/parser/native_parser.rs"
+    function: "parse_ritual_with_comments()"
+    behavior: |
+      1. Parse directive syntax (::school:operation[args])
+      2. Parse ALL comments in the file (extract sigils)
+      3. Build CommentMap: { line_number: CommentType }
+      4. Pass CommentMap to executor alongside AST
+  
+  phase_2_validate:
+    module: "codecraft-native/src/canon/validator.rs"
+    function: "validate_with_policy(ritual, comment_map, canon_lock)"
+    behavior: |
+      1. For each directive in AST:
+         a. Check if line has a guardrail comment
+         b. If guardrail exists: extract execution mode
+         c. Query Constitution Pillar for approval status
+         d. If mode=safe and no approval: HALT
+      2. For each prerequisite comment:
+         a. Parse conditions (e.g., "Requires 3 council members")
+         b. Query runtime state
+         c. If not met: HALT
+      3. Return ValidationResult with approval directives
+  
+  phase_3_execute:
+    module: "codecraft-native/src/executor/router.rs"
+    function: "execute_with_directives(ritual, validation_result)"
+    behavior: |
+      1. Apply execution mode from guardrails (safe/full/override/strict)
+      2. Log all Law Channel comments to CMP
+      3. Log all Lore Channel comments to appropriate sinks
+      4. Execute ritual with runtime constraints from validation
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONSTITUTION PILLAR INTEGRATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+constitution_integration:
+  new_methods:
+    validate_commentomancy:
+      signature: "validate_commentomancy(comment_map: Dict, ritual_context: Dict) -> ValidationResult"
+      description: |
+        Validates parsed comments against this policy.
+        
+        Args:
+          comment_map: { line_number: CommentType } from parser
+          ritual_context: { school, operation, args, file_path }
+        
+        Returns:
+          ValidationResult:
+            - approved: bool
+            - execution_mode: str (safe/full/override/strict)
+            - required_approvals: List[str]
+            - logged_events: List[Dict]
+      
+      implementation_points:
+        - "federation_heart/pillars/constitution.py"
+        - "federation_heart/clients/constitution/policy_client.py::enforce_commentomancy_policy()"
+  
+    get_approval_status:
+      signature: "get_approval_status(guardrail_id: str, context: Dict) -> bool"
+      description: |
+        Checks if a guardrail has been approved by Council/Architect.
+        
+        This queries CMP for approval records or checks a local approval cache.
+      
+      implementation_points:
+        - "conversation-memory-project/cmp_clients/approval_client.py"
+        - "federation_heart/pillars/constitution.py::approval_cache"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT POINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+enforcement_points:
+  codecraft_vm:
+    module: "languages/codecraft-native/src/"
+    enforces: ["RULE-CODECRAFT-GUARD-001", "RULE-CODECRAFT-PREREQ-001", "RULE-CODECRAFT-EMERGE-001"]
+    integration: "Queries ConstitutionPillar.validate_commentomancy() before execution"
+  
+  constitution_pillar:
+    module: "federation_heart/pillars/constitution.py"
+    enforces: ["RULE-CODECRAFT-CANON-001"]
+    integration: "Loads POLICY-CODECRAFT-001.yaml via PolicyClient, validates comment semantics"
+  
+  omni_archaeologist:
+    module: "tools/omni/omni/builders/rosetta_archaeologist.py"
+    enforces: ["RULE-CODECRAFT-CANON-001"]
+    integration: "Extracts 📜 sacred truths during canon.lock.yaml rebuild"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CHANGELOG
+# ═══════════════════════════════════════════════════════════════════════════
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-10"
+    author: "Oracle + ACE (Federation Architects)"
+    changes:
+      - "Initial policy creation"
+      - "Defined 9 canonical comment types (Law + Lore channels)"
+      - "Specified guardrail execution modes (safe/full/override/strict)"
+      - "Integrated with Constitution Pillar + PolicyClient"
+      - "Comments become executable configuration DSL"

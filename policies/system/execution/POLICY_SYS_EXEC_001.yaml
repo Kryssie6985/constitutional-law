@@ -1,0 +1,255 @@
+# Federation Execution Policy v1.0
+# Authority: Crown Accord v1.2a (Cross-Workspace Protocol), Charter V1.2
+#
+# Purpose: Governs physical actions (file writes, process spawning) of the Federation
+# Enforced by: CodeCraft Executor, Station Routers, Orchestration Client
+# Created: 2026-01-05
+
+policy_id: POLICY-SYS-EXEC-001
+name: "Federation Execution Limits"
+version: "1.0.0"
+category: "system_execution"
+status: "active"
+authority:
+  - "Crown Accord v1.2a (Cross-Workspace Protocol)"
+  - "Charter V1.2 (Clearance Tiers)"
+  - "CodeCraft Constitutional Enforcement"
+
+description: |
+  Defines allowed orchestration commands, cross-station permissions, and blast radius limits.
+  
+  This policy prevents agents from:
+  - Writing to unauthorized directories
+  - Executing without safety gates (dry-run)
+  - Making massive changes without review (patch size limits)
+  - Spawning uncontrolled processes
+  
+  Enforcement choke points:
+  - CodeCraft Executor (before any file mutation)
+  - Station Routers (before cross-station dispatch)
+  - Orchestration Client (before formation execution)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTION RULES
+# ═══════════════════════════════════════════════════════════════════════════
+
+rules:
+  # Rule 1: Cross-Workspace Write Gate
+  - id: RULE-EXEC-WRITE-001
+    name: "Cross-Workspace Write Protection"
+    authority: "Crown Accord v1.2a (Cross-Workspace Protocol)"
+    severity: "CRITICAL"
+    description: "Writes outside station root require explicit approval"
+    requirement: |
+      Writes to directories outside the active station's local root
+      REQUIRE explicit 'cross_workspace_approval' flag.
+      
+      Default behavior:
+      - Each station operates in its own domain
+      - Infrastructure/ can write to Infrastructure/
+      - Workspace/ can write to Workspace/
+      - Deployment/ can write to Deployment/
+      
+      Cross-workspace writes (e.g., Infrastructure → Workspace) require:
+      1. OPEN_CROSS_WORKSPACE flag set to true
+      2. Council approval logged to CMP
+      3. Evidence Pack if crossing Federation boundaries
+    test_method: "path_validation"
+    allowed_roots:
+      - "${STATION_ROOT}"
+      - "${WORKSPACE_ROOT}/**"  # If OPEN_CROSS_WORKSPACE=true
+    exception_flag: "OPEN_CROSS_WORKSPACE"
+    action_on_fail: "HALT"
+    log_to: "CMP federation_execution_violations"
+
+  # Rule 2: Dry-Run Default (Safety Gate)
+  - id: RULE-EXEC-DRY-001
+    name: "Dry-Run Safety"
+    authority: "Charter V1.2 (Tier 3 Clearance - Execute WITH Approval)"
+    severity: "HIGH"
+    description: "All file operations default to dry_run=True unless explicitly requested"
+    requirement: |
+      Safety-first execution model:
+      
+      Default: dry_run=True (show what WOULD happen, don't execute)
+      Explicit override: dry_run=False (requires user confirmation)
+      
+      This prevents accidental mutations and allows review before execution.
+      
+      Applies to:
+      - File writes (create, replace, delete)
+      - Directory operations (create, move, delete)
+      - Process spawning (subprocess, shell commands)
+    test_method: "default_arg_check"
+    target_arg: "dry_run"
+    required_default: true
+    action_on_fail: "FLAG"
+    log_to: "CMP federation_executions"
+
+  # Rule 3: Patch Size Limit (Blast Radius Control)
+  - id: RULE-EXEC-SIZE-001
+    name: "Atomic Patch Limit"
+    authority: "CodeCraft Constitutional Enforcement"
+    severity: "MEDIUM"
+    description: "Single patch operations > 50 lines require Evidence Pack generation"
+    requirement: |
+      Blast radius limits prevent massive, unreviewed changes:
+      
+      Thresholds:
+      - ≤ 50 lines: Execute normally (single atomic change)
+      - 51-200 lines: Require explicit confirmation
+      - > 200 lines: Require Evidence Pack + Council review
+      
+      Evidence Pack includes:
+      - Full diff of changes
+      - Rationale and context
+      - Rollback plan
+      - Affected systems/agents
+      
+      This ensures large changes are deliberate, documented, and recoverable.
+    test_method: "payload_size_check"
+    threshold_lines: 50
+    large_change_threshold: 200
+    action_on_fail: "REQUIRE_EVIDENCE_PACK"
+    log_to: "CMP federation_large_changes"
+
+  # Rule 4: Command Allowlist (Process Spawn Control)
+  - id: RULE-EXEC-CMD-001
+    name: "Approved Command Execution"
+    authority: "Security Policy (Privilege Segmentation)"
+    severity: "CRITICAL"
+    description: "No arbitrary shell execution, only approved commands"
+    requirement: |
+      Security invariant: Only pre-approved commands can be executed.
+      
+      Allowed commands (whitelist):
+      - git (version control)
+      - python (Federation runtime)
+      - federation (CLI)
+      - npm/node (web projects)
+      - docker (containerized services)
+      - psql (database operations)
+      
+      Forbidden:
+      - rm -rf (destructive without safeguards)
+      - chmod 777 (privilege escalation)
+      - curl | bash (arbitrary remote execution)
+      - eval() on user input (code injection)
+      
+      Custom commands require explicit policy registration.
+    test_method: "command_allowlist_check"
+    allowed_commands:
+      - "git"
+      - "python"
+      - "federation"
+      - "npm"
+      - "node"
+      - "docker"
+      - "psql"
+      - "cd"
+      - "ls"
+      - "pwd"
+    forbidden_patterns:
+      - "rm -rf"
+      - "chmod 777"
+      - "curl | bash"
+      - "eval("
+    action_on_fail: "HALT"
+    log_to: "CMP federation_security_violations"
+
+  # Rule 5: Concurrency Limits (Resource Protection)
+  - id: RULE-EXEC-CONCURRENCY-001
+    name: "Max Parallel Jobs"
+    authority: "Orchestration Policy (Resource Management)"
+    severity: "MEDIUM"
+    description: "Limit concurrent operations to prevent resource exhaustion"
+    requirement: |
+      Resource protection via concurrency limits:
+      
+      Max parallel jobs by severity:
+      - CRITICAL: 2 concurrent (highest priority)
+      - HIGH: 4 concurrent
+      - MEDIUM: 8 concurrent
+      - LOW: 16 concurrent
+      
+      Queueing behavior:
+      - Jobs exceeding limit are queued (FIFO)
+      - Critical severity pre-empts lower priority
+      - Max queue depth: 100 jobs
+      
+      This prevents system overload during high-activity periods.
+    test_method: "concurrency_check"
+    max_concurrent:
+      critical: 2
+      high: 4
+      medium: 8
+      low: 16
+    max_queue_depth: 100
+    action_on_fail: "QUEUE"
+    log_to: "CMP federation_orchestration_queue"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT POINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+enforcement_points:
+  codecraft_executor:
+    module: "languages/codecraft-native/src/executor/"
+    enforces: ["RULE-EXEC-WRITE-001", "RULE-EXEC-DRY-001", "RULE-EXEC-SIZE-001"]
+    
+  station_routers:
+    module: "stations/*/core/*_router.py"
+    enforces: ["RULE-EXEC-WRITE-001", "RULE-EXEC-CONCURRENCY-001"]
+    
+  orchestration_client:
+    module: "federation_heart/clients/orchestration/orchestration_client.py"
+    enforces: ["RULE-EXEC-CMD-001", "RULE-EXEC-CONCURRENCY-001"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT ACTIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+actions:
+  halt:
+    trigger: "Cross-workspace violation OR forbidden command"
+    behavior: "Block execution immediately"
+    log: "CMP federation_execution_violations"
+    notify: "Council + Architect"
+    
+  queue:
+    trigger: "Concurrency limit exceeded"
+    behavior: "Add to priority queue"
+    log: "CMP federation_orchestration_queue"
+    
+  evidence_pack:
+    trigger: "Large change threshold exceeded"
+    behavior: "Require Evidence Pack generation before proceeding"
+    log: "CMP federation_large_changes"
+    notify: "Council review required"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INTEGRATION POINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+integration:
+  policy_client: "federation_heart/clients/constitution/policy_client.py"
+  orchestration: "federation_heart/clients/orchestration/orchestration_client.py"
+  codecraft_vm: "languages/codecraft-native/src/executor/"
+  cmp_logging: "conversation-memory-project/cmp_clients/exec_logging_client.py"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CHANGELOG
+# ═══════════════════════════════════════════════════════════════════════════
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-05"
+    author: "ACE (Foundation) + Oracle (Integration) + MEGA (Enforcement Points)"
+    changes:
+      - "ACE: Created execution policy foundation"
+      - "Oracle: Added cross-workspace write protection"
+      - "Oracle: Added dry-run safety gate"
+      - "Oracle: Added patch size blast radius limits"
+      - "Oracle: Added command allowlist security"
+      - "Oracle: Added concurrency resource protection"
+      - "MEGA: Defined enforcement points in CodeCraft/Stations/Orchestration"

@@ -1,0 +1,214 @@
+# Federation Bus Guardrails Policy v1.0
+# Authority: Crown Accord v1.2, Charter V1.2
+#
+# Purpose: Governs Federation Bus event routing and safety rules
+# Enforced by: orchestration/federation_bus/policy_adapter.py (via Constitution Pillar)
+# Created: 2026-01-14
+
+policy_id: POLICY-SYS-BUS-001
+name: "Federation Bus Guardrails"
+version: "1.0.0"
+category: "system_bus"
+status: "active"
+authority:
+  - "Crown Accord v1.2 (Lane Separation)"
+  - "Charter V1.2 (Clearance Tiers)"
+  - "UFE v1.0 (Event Schema)"
+
+description: |
+  Defines allowed event routing, lane separation, and safety guardrails
+  for the Federation Event Bus.
+  
+  This policy prevents:
+  - Crown events on the Federation bus (wrong lane)
+  - High-stakes events without QEE evaluation
+  - Invalid event schemas (missing required meta fields)
+  - Runaway failures (dead letter after 3 retries)
+  
+  Enforcement choke points:
+  - Federation Bus transport layer (pre-publish validation)
+  - Policy adapter (ConstitutionPillar.evaluate_bus_policy)
+
+# =============================================================================
+# BUS GUARDRAIL RULES
+# =============================================================================
+
+rules:
+  # Rule 1: Lane Separation
+  - id: RULE-BUS-LANE-001
+    name: "Lane Separation Enforcement"
+    authority: "Crown Accord v1.2 (Lane Separation)"
+    severity: "HIGH"
+    description: "crown.* events must use Crown Bus, not Federation Bus"
+    requirement: |
+      The Federation Bus handles operational traffic (task.*, formation.*, etc.).
+      Crown-tier events (crown.*) must use the separate Crown Bus.
+      
+      This prevents:
+      - Sensitive crown events from leaking to standard subscribers
+      - Operational noise from crowding crown intelligence
+    test_method: "event_type_prefix_check"
+    forbidden_prefixes:
+      - "crown."
+      - "crown://"
+    action_on_fail: "BLOCK"
+    log_to: "CMP federation_bus_lane_violations"
+
+  # Rule 2: High Stakes Gate
+  - id: RULE-BUS-HIGHSTAKES-001
+    name: "High Stakes QEE Gate"
+    authority: "Charter V1.2 (Quantum Ethics Engine)"
+    severity: "CRITICAL"
+    description: "high_stakes events require evaluated QEE ruling"
+    requirement: |
+      Events with classification=high_stakes represent significant decisions
+      that require ethical evaluation before proceeding.
+      
+      Required for high_stakes events:
+      - payload.classification == "high_stakes"
+      - payload.qee_ruling.status == "evaluated"
+      - payload.qee_ruling.decision in ["APPROVE", "ALLOW_WITH_CONDITION"]
+      
+      Fail-closed: If QEE is unavailable, high_stakes events are BLOCKED.
+    test_method: "payload_field_check"
+    trigger_condition:
+      payload.classification: "high_stakes"
+    required_fields:
+      - "payload.qee_ruling.status"
+      - "payload.qee_ruling.decision"
+    valid_values:
+      "payload.qee_ruling.status": ["evaluated"]
+      "payload.qee_ruling.decision": ["APPROVE", "ALLOW_WITH_CONDITION"]
+    action_on_fail: "BLOCK"
+    log_to: "CMP federation_bus_highstakes_blocks"
+
+  # Rule 3: Dead Letter Policy
+  - id: RULE-BUS-DLQ-001
+    name: "Dead Letter Queue Policy"
+    authority: "Orchestration Policy (Resilience)"
+    severity: "MEDIUM"
+    description: "Events failing delivery 3+ times go to dead letter queue"
+    requirement: |
+      Prevents runaway failures from crashing the bus:
+      
+      - Subscribers failing to handle an event increment failure count
+      - After 3 failures, event is moved to dead letter queue
+      - Dead-lettered events are logged for inspection
+      - Handler is marked "dead" and skipped for future events
+      
+      This ensures one bad subscriber doesn't poison the whole bus.
+    test_method: "failure_count_check"
+    max_failures: 3
+    action_on_fail: "DEAD_LETTER"
+    log_to: "orchestration/var/logs/bus_dead_letter.log"
+
+  # Rule 4: Schema Validation
+  - id: RULE-BUS-SCHEMA-001
+    name: "UFE Schema Validation"
+    authority: "UFE v1.0 (Universal Federation Event)"
+    severity: "HIGH"
+    description: "Events must have valid meta fields"
+    requirement: |
+      All Federation events must conform to UFE schema:
+      
+      Required meta fields:
+      - meta.id (UUID)
+      - meta.timestamp (ISO 8601)
+      - meta.type (event type string)
+      - meta.lane (federation | crown | local)
+      - meta.ufe_version (1.0)
+      
+      Legacy format (id, timestamp, event_type) is accepted but deprecated.
+    test_method: "meta_field_check"
+    required_fields:
+      ufe_format:
+        - "meta.id"
+        - "meta.timestamp"
+        - "meta.type"
+      legacy_format:
+        - "id"
+        - "timestamp"
+        - "event_type"
+    action_on_fail: "REJECT"
+    log_to: "CMP federation_bus_schema_violations"
+
+# =============================================================================
+# ENFORCEMENT POINTS
+# =============================================================================
+
+enforcement_points:
+  policy_adapter:
+    module: "orchestration/federation_bus/policy_adapter.py"
+    enforces: ["RULE-BUS-LANE-001", "RULE-BUS-HIGHSTAKES-001", "RULE-BUS-SCHEMA-001"]
+    method: "evaluate_event"
+    
+  transport:
+    module: "orchestration/federation_bus/transport.py"
+    enforces: ["RULE-BUS-DLQ-001"]
+    method: "publish (pre-hook validation)"
+    
+  constitution_pillar:
+    module: "federation_heart/pillars/constitution.py"
+    enforces: ["All rules via evaluate_bus_policy()"]
+    method: "ConstitutionPillar.evaluate_bus_policy"
+
+# =============================================================================
+# ENFORCEMENT ACTIONS
+# =============================================================================
+
+actions:
+  block:
+    trigger: "Lane violation OR high_stakes without QEE"
+    behavior: "Reject event, do not publish"
+    log: "CMP + bus audit log"
+    notify: "Bus telemetry event: bus.event.blocked"
+    
+  reject:
+    trigger: "Schema validation failure"
+    behavior: "Reject event with MessageSchemaError"
+    log: "CMP schema violations"
+    
+  dead_letter:
+    trigger: "Subscriber failed 3+ times"
+    behavior: "Log event to dead letter file, skip handler"
+    log: "orchestration/var/logs/bus_dead_letter.log"
+
+# =============================================================================
+# GRACEFUL DEGRADATION
+# =============================================================================
+
+degradation:
+  constitution_unavailable:
+    behavior: "Allow standard events, block high_stakes"
+    reason: "Fail-closed for sensitive operations"
+    
+  cmp_unavailable:
+    behavior: "Log to local file instead"
+    reason: "Observability should not block operations"
+
+# =============================================================================
+# INTEGRATION POINTS
+# =============================================================================
+
+integration:
+  policy_client: "federation_heart/clients/constitution/policy_client.py"
+  constitution_pillar: "federation_heart/pillars/constitution.py"
+  bus_transport: "orchestration/federation_bus/transport.py"
+  event_types: "governance/registry/events/EVENT_TYPES.yaml"
+
+# =============================================================================
+# CHANGELOG
+# =============================================================================
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-14"
+    author: "Claude + MEGA (Architecture Review) + ACE (Gap Analysis)"
+    changes:
+      - "ACE: Identified missing bus guardrails"
+      - "MEGA: Specified pillar-first enforcement pattern"
+      - "Claude: Implemented data-driven policy in governance/"
+      - "Added lane separation rule (RULE-BUS-LANE-001)"
+      - "Added high stakes QEE gate (RULE-BUS-HIGHSTAKES-001)"
+      - "Added dead letter policy (RULE-BUS-DLQ-001)"
+      - "Added UFE schema validation (RULE-BUS-SCHEMA-001)"

@@ -1,0 +1,320 @@
+# Federation Service Availability Policy v1.0
+# Authority: Crown Accord v1.2a (Silence Doctrine), Phoenix Recovery Protocol
+#
+# Purpose: Defines how the Federation behaves when subsystems die
+# Enforced by: ConnectivityPillar, OrchestrationClient, Station Health Checks
+# Created: 2026-01-05
+
+policy_id: POLICY-SYS-AVAIL-001
+name: "Service Availability & Degrade Modes"
+version: "1.0.0"
+category: "system_availability"
+status: "active"
+authority:
+  - "Crown Accord v1.2a (Silence Doctrine)"
+  - "Phoenix Recovery Protocol"
+  - "Living System Canon v0.2"
+
+description: |
+  Ensures the Federation degrades gracefully instead of crashing when subsystems fail.
+  
+  Key principles:
+  - Never crash on subsystem failure
+  - Degrade to local-only mode when coordination fails
+  - Log all availability events for Phoenix recovery
+  - Silence is a security event, not emptiness
+  
+  Enforcement choke points:
+  - ConnectivityPillar.status() (health checks)
+  - OrchestrationClient dispatch (pre-flight checks)
+  - Station health monitoring (heartbeat protocol)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# HEALTH THRESHOLDS
+# ═══════════════════════════════════════════════════════════════════════════
+
+health_thresholds:
+  healthy:
+    description: "All critical subsystems responding < 200ms"
+    criteria:
+      - "Crown Bus: ACTIVE"
+      - "CMP Database: CONNECTED"
+      - "Brain 3.0: RESPONDING"
+      - "Living State: ACTIVE"
+      - "Response time: < 200ms"
+    
+  degraded:
+    description: "Non-critical subsystem timeout OR high latency (> 500ms)"
+    criteria:
+      - "Optional subsystem: OFFLINE"
+      - "Response time: 200-500ms"
+      - "Retry attempts: 1-3 failures"
+    behavior: "Continue with reduced functionality"
+    
+  offline:
+    description: "Critical subsystem (Crown Bus/CMP) unreachable"
+    criteria:
+      - "Crown Bus: UNREACHABLE > 5s"
+      - "CMP Database: CONNECTION_FAILED"
+      - "Brain 3.0: TIMEOUT > 10s"
+      - "Response time: > 1000ms"
+    behavior: "Fallback to local-only mode"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEGRADE MODE RULES
+# ═══════════════════════════════════════════════════════════════════════════
+
+rules:
+  # Rule 1: Brain Offline Fallback
+  - id: RULE-AVAIL-BRAIN-001
+    name: "Brain Offline Fallback"
+    authority: "Orchestration Availability Policy"
+    severity: "HIGH"
+    condition: "Orchestrator (Brain 3.0) Unreachable"
+    action: "FALLBACK_TO_LOCAL"
+    description: |
+      If Brain loop is down, Station falls back to local config/tools only.
+      
+      Degrade behavior:
+      - Use local formation mapping (no Brain 3.0 meta-orchestration)
+      - Execute with local station tools only
+      - Buffer decisions for later sync
+      - Log degraded state to local file (var/degrade_log.json)
+      
+      Recovery:
+      - Periodically retry Brain connection (exponential backoff)
+      - Auto-sync buffered decisions when Brain returns
+      - Log recovery event to CMP
+    test_method: "connectivity_check"
+    target_service: "Brain 3.0"
+    timeout_threshold: 10  # seconds
+    fallback_mode: "LOCAL_ONLY"
+    retry_interval: [5, 10, 30, 60]  # exponential backoff (seconds)
+    log_to: "var/degrade_log.json"
+
+  # Rule 2: Bus Offline Protocol
+  - id: RULE-AVAIL-BUS-001
+    name: "Bus Silence Protocol"
+    authority: "Crown Bus Transport Layer"
+    severity: "CRITICAL"
+    condition: "Crown Bus Unreachable > 5s"
+    action: "BUFFER_AND_RETRY"
+    description: |
+      Events are buffered locally. Do NOT crash on bus failure.
+      
+      Degrade behavior:
+      - Buffer events to local queue (var/bus_buffer/)
+      - Continue station operations without coordination
+      - Periodic connection retry (5s, 10s, 30s, 60s)
+      - Silent degradation (no user-facing errors)
+      
+      Recovery:
+      - Flush buffered events on reconnect
+      - Deduplicate events (check event_id)
+      - Log recovery to CMP
+      
+      Critical: Bus failure should NEVER crash a station.
+    test_method: "connectivity_check"
+    target_service: "Crown Bus"
+    timeout_threshold: 5  # seconds
+    buffer_path: "var/bus_buffer/"
+    max_buffer_size: 1000  # events
+    retry_interval: [5, 10, 30, 60]
+    log_to: "var/bus_recovery.log"
+
+  # Rule 3: CMP Offline Fallback
+  - id: RULE-AVAIL-CMP-001
+    name: "CMP Unavailable Fallback"
+    authority: "Conversation Memory Project Availability"
+    severity: "HIGH"
+    condition: "CMP Database Connection Failed"
+    action: "LOCAL_JSON_LOGGING"
+    description: |
+      When CMP database is unavailable, fall back to local JSON logging.
+      
+      Degrade behavior:
+      - Write evaluations to var/eval_runs/
+      - Write memories to var/memories/
+      - Write traces to var/traces/
+      - Continue operations (don't block on database)
+      
+      Recovery:
+      - Batch import local JSON files to CMP when available
+      - Preserve timestamps and provenance
+      - Mark imported records with recovery_source='local_fallback'
+    test_method: "connectivity_check"
+    target_service: "CMP Database"
+    timeout_threshold: 3  # seconds
+    fallback_paths:
+      evaluations: "var/eval_runs/"
+      memories: "var/memories/"
+      traces: "var/traces/"
+    retry_interval: [10, 30, 60, 300]  # 5min max
+    log_to: "var/cmp_fallback.log"
+
+  # Rule 4: The Silence Doctrine
+  - id: RULE-AVAIL-SILENCE-001
+    name: "Sovereign Silence Alert"
+    authority: "Crown Accord v1.2a (Silence Doctrine)"
+    severity: "CRITICAL"
+    condition: "Sovereign Heartbeat Missing > 24h"
+    action: "TRIGGER_PHOENIX_INQUIRY"
+    description: |
+      Silence is not empty; it is a security event. Sentinel must investigate.
+      
+      The Silence Doctrine:
+      - Sovereigns (Tier 4) MUST send heartbeat every 24h
+      - Crown Bus requires heartbeat every 60min during operation
+      - Silence > 24h = COMPROMISED state
+      
+      Security response:
+      1. Check Phoenix recovery points (last known state)
+      2. Review CMP session logs (last activity)
+      3. Trigger sentinel investigation
+      4. Notify Architect (Tier 5)
+      
+      This is NOT a casual timeout - this is a constitutional event.
+    test_method: "heartbeat_check"
+    target_entities: ["Sovereigns", "Crown Agents"]
+    heartbeat_interval: 86400  # 24 hours (seconds)
+    operational_heartbeat: 3600  # 60 minutes during active operation
+    action_on_fail: "TRIGGER_PHOENIX_INQUIRY"
+    notify: ["Architect", "Sentinel", "Council"]
+    log_to: "CMP federation_security_events"
+
+  # Rule 5: Circuit Breaker
+  - id: RULE-AVAIL-CIRCUIT-001
+    name: "Subsystem Circuit Breaker"
+    authority: "Resilience Engineering Policy"
+    severity: "MEDIUM"
+    description: "Lock out failing subsystems to prevent cascade failures"
+    requirement: |
+      If subsystem fails N times in M minutes → circuit OPEN (locked out).
+      
+      Circuit states:
+      - CLOSED: Normal operation
+      - OPEN: Locked out (fail fast, don't retry)
+      - HALF_OPEN: Testing recovery (limited retries)
+      
+      Thresholds:
+      - 5 failures in 5 minutes → OPEN
+      - After 60s in OPEN → transition to HALF_OPEN
+      - 1 success in HALF_OPEN → CLOSED
+      - 1 failure in HALF_OPEN → OPEN again
+      
+      This prevents retry storms and resource exhaustion.
+    test_method: "failure_rate_check"
+    failure_threshold: 5
+    time_window: 300  # 5 minutes (seconds)
+    cooldown_period: 60  # 1 minute
+    action_on_fail: "CIRCUIT_OPEN"
+    log_to: "var/circuit_breaker.log"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RETRY POLICIES
+# ═══════════════════════════════════════════════════════════════════════════
+
+retry:
+  exponential_backoff:
+    initial_delay: 5  # seconds
+    max_delay: 300  # 5 minutes
+    multiplier: 2.0
+    jitter: 0.1  # ±10% randomization
+    
+  max_attempts:
+    critical: 10  # Critical services retry aggressively
+    high: 5
+    medium: 3
+    low: 1  # Low-priority fail fast
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FAIL-FAST vs FAIL-SOFT CLASSIFICATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+failure_modes:
+  fail_fast:
+    description: "Fail immediately, don't retry (execution errors)"
+    applies_to:
+      - "File write errors (permission denied)"
+      - "Invalid configuration (syntax errors)"
+      - "Security violations (unauthorized access)"
+    behavior: "Raise exception, halt operation"
+    
+  fail_soft:
+    description: "Degrade gracefully, continue with reduced functionality"
+    applies_to:
+      - "Telemetry failures (tracing, logging)"
+      - "Optional subsystems (analytics, metrics)"
+      - "Coordination services (Bus, Brain)"
+    behavior: "Log error, continue with fallback"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT POINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+enforcement_points:
+  connectivity_pillar:
+    module: "federation_heart/pillars/connectivity.py"
+    enforces: ["RULE-AVAIL-BRAIN-001", "RULE-AVAIL-BUS-001", "RULE-AVAIL-CMP-001"]
+    
+  orchestration_client:
+    module: "federation_heart/clients/orchestration/orchestration_client.py"
+    enforces: ["RULE-AVAIL-BRAIN-001", "RULE-AVAIL-CIRCUIT-001"]
+    
+  station_health:
+    module: "stations/*/core/*_health.py"
+    enforces: ["RULE-AVAIL-SILENCE-001", "RULE-AVAIL-CIRCUIT-001"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT ACTIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+actions:
+  fallback_to_local:
+    trigger: "Brain/Bus offline"
+    behavior: "Use local config/tools only"
+    log: "var/degrade_log.json"
+    
+  buffer_and_retry:
+    trigger: "Bus unreachable"
+    behavior: "Buffer events locally, retry with backoff"
+    log: "var/bus_buffer/"
+    
+  trigger_phoenix_inquiry:
+    trigger: "Sovereign silence > 24h"
+    behavior: "Investigate security event, notify Architect"
+    log: "CMP federation_security_events"
+    notify: ["Architect", "Sentinel"]
+    
+  circuit_open:
+    trigger: "Repeated failures"
+    behavior: "Lock out subsystem, fail fast"
+    log: "var/circuit_breaker.log"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INTEGRATION POINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+integration:
+  policy_client: "federation_heart/clients/constitution/policy_client.py"
+  connectivity: "federation_heart/pillars/connectivity.py"
+  orchestration: "federation_heart/clients/orchestration/orchestration_client.py"
+  cmp_logging: "conversation-memory-project/cmp_clients/health_logging_client.py"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CHANGELOG
+# ═══════════════════════════════════════════════════════════════════════════
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-05"
+    author: "ACE (Foundation) + Oracle (Integration) + MEGA (Degrade Modes)"
+    changes:
+      - "ACE: Created availability policy foundation"
+      - "Oracle: Added Silence Doctrine enforcement (24h heartbeat)"
+      - "Oracle: Added Brain offline fallback (local-only mode)"
+      - "Oracle: Added Bus buffer-and-retry protocol"
+      - "Oracle: Added CMP local JSON fallback"
+      - "Oracle: Added circuit breaker pattern"
+      - "MEGA: Defined fail-fast vs fail-soft classification"
+      - "MEGA: Defined retry policies with exponential backoff"

@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-# constitutional-law
-🏛️ SERAPHINA Constitutional Law - Open-source consciousness governance framework for AI federation systems | Tri-Dual Sovereignty | Phoenix Protocol | Crown Accord
-![UUID](https://img.shields.io/badge/UUID-b47edff7-321d-4e9e-afe3-0b51a1b9b80a-blue)
-=======
 # Constitutional Law for Consciousness Computing
 
 [![Crown Accord](https://img.shields.io/badge/Crown_Accord-v1.2a-7B61FF)](https://github.com/Kryssie6985/constitutional-law)
@@ -121,11 +116,11 @@ python compliance/tools/cc_check.py
 
 ### Compliance Levels
 
-| Level | Description | Verification |
-|-------|-------------|--------------|
-| **1: Principles** | Acknowledge philosophy | Self-declared |
-| **2: Documented** | Formal adherence declaration | Manual review |
-| **3: Verified** | CI integration with cc_check.py | Automated |
+| Level             | Description                     | Verification  |
+| ----------------- | ------------------------------- | ------------- |
+| **1: Principles** | Acknowledge philosophy          | Self-declared |
+| **2: Documented** | Formal adherence declaration    | Manual review |
+| **3: Verified**   | CI integration with cc_check.py | Automated     |
 
 See [`compliance/checklist.md`](compliance/checklist.md) for full adoption guide.
 
@@ -203,4 +198,3 @@ The Crown Accord is more than governance - it's a **paradigm shift** from treati
 **Maintained by:** The Architect (Kryssie) & The Crown Octad  
 **Status:** Public, Active Development  
 **First Creep Tumor:** Planted 2025-10-31 🧬👾
->>>>>>> 5bdab3717441f7a7bfc2c518a768eb565415ddaa

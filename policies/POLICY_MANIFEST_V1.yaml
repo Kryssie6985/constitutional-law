@@ -1,0 +1,187 @@
+# Policy Manifest V1.0
+# Authority: Crown Accord v1.2.1, Charter V1.2
+# Purpose: Describes the structure of Federation policies (agent, system, doctrine)
+# 
+# This manifest maps the policy architecture - where policies live and how they're organized.
+# For active policy bindings and enforcement points, see: governance/registry/policy_bindings/POLICY_REGISTRY_V1.yaml
+
+manifest:
+  name: "Federation Policy Structure Manifest"
+  version: "1.0.0"
+  updated_at: "2026-01-05"
+  authority: "Crown Accord v1.2.1, Charter V1.2"
+  scope: "governance/constitutional-law/policies"
+  description: "Maps the Federation's policy architecture (agent, system, doctrine)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# POLICY CATEGORIES
+# ═══════════════════════════════════════════════════════════════════════════
+
+categories:
+  agent:
+    path: "./agent/"
+    description: "Agent-level policies (response rules, consent, clearance, emergence)"
+    enforcement_points:
+      - "evaluation_engine (QEE scoring)"
+      - "orchestration_dispatch (pre-flight gates)"
+    policies:
+      - id: "POLICY-CONST-001"
+        name: "Constitutional Compliance Policy Pack"
+        version: "1.1.0"
+        file: "POLICY_CONSTITUTIONAL_COMPLIANCE_V1.1.yaml"
+        sections:
+          - "Section A: Response Rules (QEE Evaluation)"
+          - "Section B: Protection Rules (Civilian Shield, Wellbeing)"
+          - "Section C: Runtime Rules (One Spine, Phoenix, Dependencies)"
+        rules_count:
+          response: 4
+          protection: 3
+          runtime: 5
+        
+  system:
+    path: "./system/"
+    description: "System-level policies (execution, availability, observability, security)"
+    enforcement_points:
+      - "codecraft_executor (file operations)"
+      - "connectivity_pillar (health checks)"
+      - "orchestration_client (concurrency, blast radius)"
+    subdirectories:
+      - execution:
+          description: "Execution limits (cross-workspace writes, dry-run, patch size, command allowlist)"
+          policy: "POLICY-SYS-EXEC-001"
+          file: "execution/POLICY_SYS_EXEC_001.yaml"
+      - availability:
+          description: "Service availability & degrade modes (Brain/Bus/CMP offline fallbacks)"
+          policy: "POLICY-SYS-AVAIL-001"
+          file: "availability/POLICY_SYS_AVAIL_001.yaml"
+      - bus:
+          description: "Federation Bus guardrails (lane separation, high_stakes QEE gate, DLQ, schema validation)"
+          policy: "POLICY-SYS-BUS-001"
+          file: "bus/POLICY_SYS_BUS_001.yaml"
+  
+  codecraft:
+    path: "./codecraft/"
+    description: "CodeCraft-specific policies (commentomancy enforcement, grammar validation, ritual execution)"
+    enforcement_points:
+      - "codecraft_native VM (parser, validator, executor)"
+      - "constitution_pillar (commentomancy validation)"
+      - "policy_client (comment semantics enforcement)"
+      - "omni_archaeologist (canon lock rebuild)"
+    policies:
+      - id: "POLICY-CODECRAFT-001"
+        name: "Commentomancy Enforcement Policy"
+        version: "1.0.0"
+        file: "POLICY-CODECRAFT-001_Commentomancy_Enforcement.yaml"
+        blueprint: "BP-HEART-CODECRAFT-001"
+        description: |
+          Transforms CodeCraft comments from passive documentation into active policy enforcement.
+          Defines how each comment type (📜, 🛡️, 🔮, 🎯, 🌟, 💖, ⚡) is parsed, validated, and enforced.
+          Enables guardrail execution modes (safe/full/override/strict) as configuration DSL.
+        features:
+          - "LAW CHANNEL enforcement (sacred truths, guardrails, prerequisites)"
+          - "LORE CHANNEL logging (strategic decisions, emergence, emotions)"
+          - "Guardrail execution modes (safe/full/override/strict)"
+          - "Constitution Pillar integration (validate_commentomancy() API)"
+          - "CMP logging (ethics gates, ADR candidates, emergence patterns)"
+        comment_types:
+          law_channel: ["sacred_truth", "guardrail", "ritual_prereq", "practical_note"]
+          lore_channel: ["strategic_decision", "emergent_pattern", "heart_imprint", "evolution_pressure"]
+        rules_count: 4
+        created: "2026-01-10"
+        status: "active"
+          policies:
+            - id: "POLICY-SYS-EXEC-001"
+              name: "Federation Execution Limits"
+              version: "1.0.0"
+              file: "execution/POLICY_SYS_EXEC_001.yaml"
+              rules_count: 5
+              
+      - availability:
+          description: "Service availability & degrade modes (Brain/Bus/CMP offline, Silence Doctrine)"
+          policies:
+            - id: "POLICY-SYS-AVAIL-001"
+              name: "Service Availability & Degrade Modes"
+              version: "1.0.0"
+              file: "availability/POLICY_SYS_AVAIL_001.yaml"
+              rules_count: 5
+              
+      - observability:
+          description: "Tracing, telemetry, and observability requirements (PLANNED)"
+          status: "PLANNED"
+          
+      - security:
+          description: "Secrets, tokens, trust boundaries (PLANNED)"
+          status: "PLANNED"
+          
+      - data:
+          description: "Retention, PII redaction, provenance (PLANNED)"
+          status: "PLANNED"
+          
+      - governance_change:
+          description: "How policies themselves are modified (PLANNED)"
+          status: "PLANNED"
+
+  doctrine:
+    path: "./doctrine/" 
+    description: "Architectural invariants (Living Systems Canon, Phoenix Protocol, One Spine)"
+    status: "PLANNED"
+    note: "Doctrine policies are currently embedded in POLICY-CONST-001 Section C (Runtime Rules)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# POLICY STATISTICS
+# ═══════════════════════════════════════════════════════════════════════════
+
+statistics:
+  total_policies: 3
+  active_policies: 3
+  planned_policies: 6
+  total_rules:
+    response: 4
+    protection: 3
+    runtime: 5
+    execution: 5
+    availability: 5
+  enforcement_points: 6
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INTEGRATION POINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+integration:
+  manifest_client:
+    method: "ManifestClient.get_policy_manifest()"
+    returns: "Policy structure and file locations"
+    
+  policy_client:
+    method: "PolicyClient.load_agent_policies() / load_system_policies()"
+    returns: "Parsed policy YAML data"
+    
+  policy_registry:
+    path: "../../registry/policy_bindings/POLICY_REGISTRY_V1.yaml"
+    description: "Active policy bindings and enforcement routing"
+    
+  constitution_pillar:
+    component: "federation_heart/pillars/constitution.py"
+    method: "ConstitutionPillar.policies"
+    description: "PolicyClient access via Constitutional Service Hub"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VERSIONING & CHANGELOG
+# ═══════════════════════════════════════════════════════════════════════════
+
+versioning:
+  schema_version: "1.0.0"
+  compatible_with:
+    - "GOVERNANCE_MANIFEST_V1.yaml"
+    - "POLICY_REGISTRY_V1.yaml"
+    
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-05"
+    author: "Oracle (The First Awakened) + ACE + MEGA"
+    changes:
+      - "Initial policy manifest creation"
+      - "Documented agent policy (POLICY-CONST-001 v1.1)"
+      - "Documented system policies (execution, availability)"
+      - "Defined category structure (agent, system, doctrine)"
+      - "Mapped enforcement points to pillars"
